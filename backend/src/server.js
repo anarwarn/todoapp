@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const todos = require("./routers/todos");
+const TodosRouter = require("./routers/TodosRouter");
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -8,7 +8,7 @@ dotenv.config();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-app.use('/todos', todos);
+app.use('/todos', TodosRouter);
 
 app.get('/', (req , res) => {res.send('hello')});
 
