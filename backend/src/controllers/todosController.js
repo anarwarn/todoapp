@@ -1,6 +1,7 @@
 const express = require('express');
 
 const getTodos = (req, res) => {
+  
   res.json({ todos: [] }).send('hello');
 };
 
