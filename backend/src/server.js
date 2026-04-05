@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-const TodosRouter = require("./routers/TodosRouter");
 const userRouter = require("./routers/UserRoute");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -31,7 +30,6 @@ app.use(session({
 
 const PORT = process.env.PORT || 3000;
 
-app.use('/todos', TodosRouter);
 app.use('/users', userRouter);  
 app.get('/', (req , res) => {res.send('hello')});
 
