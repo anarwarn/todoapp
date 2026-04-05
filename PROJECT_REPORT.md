@@ -2,7 +2,7 @@
 
 **Project Name:** Auth-API (Full-Stack Authentication System)  
 **Date:** April 5, 2026  
-**Developer:** [Anar Velizade]
+**Developer:** Anar Velizade
 
 ---
 
