@@ -1,86 +1,83 @@
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
 
 const registerUser = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
+    try {
+        const { username, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email or username' });
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username and password required' });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // Create new user
+        const user = new User({ username, password });
+        await user.save();
+
+        // Set session
+        req.session.userId = user._id;
+        req.session.username = user.username;
+
+        res.status(201).json({ message: 'User registered successfully', username: user.username });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
-
-    // Create new user
-    const user = new User({
-      username,
-      email,
-      password
-    });
-
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email
-      }
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
-  }
 };
 
 const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { username, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username and password required' });
+        }
+
+        // Find user by username
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Check password
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Set session
+        req.session.userId = user._id;
+        req.session.username = user.username;
+
+        res.json({ message: 'Login successful', username: user.username });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
+};
 
-    // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email
-      }
+const logoutUser = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Logged out successfully' });
     });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
-  }
-};  
+};
+
+const getUser = (req, res) => {
+    if (req.session.userId) {
+        return res.json({ isAuthenticated: true, username: req.session.username });
+    }
+    res.json({ isAuthenticated: false });
+};
 
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    logoutUser,
+    getUser
 }
